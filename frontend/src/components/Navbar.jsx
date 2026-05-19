@@ -1,4 +1,5 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import { LogOut, Shield, LayoutDashboard } from 'lucide-react';
@@ -7,6 +8,26 @@ import logoGif from '../assets/logo.gif';
 export const Navbar = () => {
   const { user, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [showAdminPopup, setShowAdminPopup] = useState(false);
+
+  useEffect(() => {
+    if (isAdmin && location.pathname !== '/admin') {
+      const hasSeen = sessionStorage.getItem('hasSeenAdminHint');
+      if (!hasSeen) {
+        setShowAdminPopup(true);
+      }
+    } else {
+      setShowAdminPopup(false);
+    }
+  }, [isAdmin, location.pathname]);
+
+  const dismissPopup = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    sessionStorage.setItem('hasSeenAdminHint', 'true');
+    setShowAdminPopup(false);
+  };
 
   const handleLogout = () => {
     logout();
@@ -35,10 +56,27 @@ export const Navbar = () => {
           </Link>
 
           {isAdmin && (
-            <Link to="/admin" className="btn btn-ghost btn-sm" title="Admin Panel">
-              <Shield size={16} />
-              <span className="text-muted text-sm" style={{ color: 'var(--color-primary-light)' }}>Admin</span>
-            </Link>
+            <div style={{ position: 'relative', display: 'inline-block' }}>
+              <Link
+                to="/admin"
+                className="btn btn-ghost btn-sm"
+                title="Admin Panel"
+                onClick={() => {
+                  sessionStorage.setItem('hasSeenAdminHint', 'true');
+                  setShowAdminPopup(false);
+                }}
+              >
+                <Shield size={16} />
+                <span className="text-muted text-sm" style={{ color: 'var(--color-primary-light)' }}>Admin</span>
+              </Link>
+              {showAdminPopup && (
+                <div className="admin-hint-popup">
+                  <div className="admin-hint-arrow" />
+                  <p>Want to see tasks and users across all accounts? Visit the Admin Panel!</p>
+                  <button onClick={dismissPopup} className="btn-close-hint" aria-label="Close Hint">×</button>
+                </div>
+              )}
+            </div>
           )}
 
           <div className="navbar-user">
